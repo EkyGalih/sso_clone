@@ -1,0 +1,50 @@
+version: "3.7"
+services:
+    app:
+        build:
+            args:
+                user: romrom
+                uid: 1000
+            context: ./
+            dockerfile: Dockerfile
+        image: sso-docker
+        container_name: sso-app
+        restart: unless-stopped
+        working_dir: /var/www/
+        volumes:
+            - ./:/var/www
+        networks:
+            - laravel-docker
+    db:
+        image: mysql:8.0
+        container_name: db-sso
+        command: --default-authentication-plugin=mysql_native_password
+        restart: unless-stopped
+        ports:
+            - "33061:3306"
+        environment:
+            MYSQL_DATABASE: ${DB_DATABASE}
+            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+            MYSQL_PASSWORD: ${DB_PASSWORD}
+            MYSQL_USER: ${DB_USERNAME}
+            SERVICE_TAGS: dev
+            SERVICE_NAME: mysql
+        volumes:
+            - /opt/mysql_data:/var/lib/mysql
+            - ./docker-compose/mysql:/docker-entrypoint-initdb.d
+        networks:
+            - laravel-docker
+    nginx:
+        image: nginx:alpine
+        container_name: nginx-sso-app
+        restart: unless-stopped
+        ports:
+            - "8001:80"
+        volumes:
+            - ./:/var/www
+            - ./docker-compose/nginx:/etc/nginx/conf.d/
+        networks:
+            - laravel-docker
+networks:
+    laravel-docker:
+        driver: bridge
